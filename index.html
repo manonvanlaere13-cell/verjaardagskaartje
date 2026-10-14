@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verjaardagskaart</title>
+<style>
+*{box-sizing:border-box}
+:root{--red:#ad293b;--cream:#fff1df}
+body{margin:0;min-height:100svh;display:grid;place-items:center;background:radial-gradient(ellipse at center,#f7e8d1,#d3b78f);font-family:Georgia,serif;overflow:hidden}
+.stage{position:relative;width:min(92vw,400px);height:min(72svh,600px);perspective:1800px;filter:drop-shadow(0 16px 22px #55301f40);transition:width .9s ease}
+.stage.is-open{width:min(92vw,800px)}
+.book{position:absolute;inset:0;transform-style:preserve-3d}
+.spread{position:absolute;inset:0;display:flex;overflow:hidden;border-radius:4px;background:#f8f3e9}
+.page{position:relative;width:50%;height:100%;overflow:hidden;background:#f8f3e9}
+.page img.art{display:block;width:100%;height:100%;object-fit:fill;user-select:none;-webkit-user-drag:none}
+.left-page{border-right:1px solid #b78c6d}
+.right-page{border-left:1px solid #b78c6d}
+.cover{position:absolute;inset:0;width:100%;z-index:10;transform-origin:left center;transform-style:preserve-3d;transition:transform 1s cubic-bezier(.2,.75,.2,1),left .9s ease,width .9s ease;cursor:pointer}
+.cover.open{left:50%;width:50%;transform:rotateY(-180deg);pointer-events:none}
+.cover-face{position:absolute;inset:0;backface-visibility:hidden;overflow:hidden;background:#b02c3f;border-radius:4px}
+.cover-face img{width:100%;height:100%;display:block;object-fit:fill}
+.cover-back{transform:rotateY(180deg);background:transparent}.cover-back img{display:none}
+.hint{position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);font:600 12px system-ui,sans-serif;color:#9e2739;background:#fff4e5e8;padding:7px 12px;border-radius:999px;white-space:nowrap}
+.controls{position:absolute;top:calc(100% + 43px);left:0;right:0;display:flex;justify-content:center;gap:8px}
+.ctrl{border:1px solid #9e3140;color:#9e2739;background:#fff4e5;border-radius:999px;padding:8px 13px;font:600 12px system-ui,sans-serif;cursor:pointer}
+.envelope-click{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;cursor:pointer;z-index:2}
+.envelope-click:focus-visible,.tape-click:focus-visible{outline:3px dashed var(--red);outline-offset:-5px}
+.letter-overlay{position:absolute;inset:0;z-index:5;display:none;align-items:center;justify-content:center;padding:4% 5%;background:#301b173d;cursor:pointer}
+.letter-overlay.show{display:flex}
+.letter-overlay img{width:82%;height:92%;object-fit:fill;box-shadow:0 8px 22px #1d100f55;cursor:pointer}
+.letter-overlay .close-label{position:absolute;bottom:5%;left:50%;transform:translateX(-50%);background:#fff3e6ed;color:var(--red);padding:5px 9px;border-radius:3px;font:600 11px system-ui,sans-serif;white-space:nowrap}
+.tape-click{position:absolute;z-index:6;left:25%;top:87%;width:52%;height:8%;border:0;background:transparent;cursor:pointer;border-radius:4px}
+.tape-click:hover{background:transparent}
+.cake-note{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);font:600 10px system-ui,sans-serif;color:#9e2739;background:#fff3e6d9;padding:3px 6px;border-radius:3px;white-space:nowrap;pointer-events:none}
+@media(max-height:600px){.stage{height:58svh}.stage.is-open{width:min(92vw,calc(58svh * 4 / 3))}.hint{top:calc(100% + 7px)}.controls{top:calc(100% + 35px)}}
+@media(max-width:480px){.stage{width:min(92vw,400px);height:min(58svh,520px)}.stage.is-open{width:min(94vw,calc(58svh * 4 / 3))}.hint{font-size:10px}.ctrl{font-size:10px;padding:7px 10px}.controls{top:calc(100% + 36px)}}
+@media(prefers-reduced-motion:reduce){.cover,.flame{transition:none}}
+
+/* Final layout corrections */
+.left-page > img.art{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:1}
+.left-page .envelope-click{position:absolute;inset:0;z-index:2}
+.left-page .letter-overlay{position:absolute;inset:0;z-index:5;display:none;padding:0;background:#301b173d}
+.left-page .letter-overlay.show{display:block}
+.left-page .letter-overlay img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;box-shadow:0 8px 22px #1d100f55}
+.left-page .letter-overlay .close-label{z-index:6;bottom:2%;font-size:10px}
+
+.cover-back{background:transparent!important}.cover-back img{display:none!important}
+</style>
+</head>
+<body>
+<main class="stage" aria-label="Interactieve verjaardagskaart">
+ <div class="book">
+  <div class="spread">
+   <section class="page left-page" aria-label="Envelop met brief">
+    <img class="art" src="envelope.jpg" alt="De rode envelop met de brief erin">
+    <button class="envelope-click" id="openLetter" aria-label="Haal de grote brief uit de envelop"></button>
+    <div class="letter-overlay" id="letterOverlay" aria-label="Grote verjaardagsbrief">
+     <img src="letter.jpg" alt="De grote verjaardagsbrief">
+     <div class="close-label">Klik op de brief om hem terug te steken</div>
+    </div>
+   </section>
+   <section class="page right-page" aria-label="Verjaardagstaart">
+    <img class="art" id="cakeArt" src="cake.jpg" data-flames-out="cake_no_flames.jpg" alt="De verjaardagstaart met kaarsjes">
+    <button class="tape-click" id="blowCandles" aria-label="Blaas de kaarsjes uit door op het stukje tape onder de taart te klikken" title="Klik op het stukje tape om de kaarsjes uit te blazen"></button>
+   </section>
+  </div>
+  <div class="cover" id="cover" role="button" tabindex="0" aria-label="Open de kaart">
+   <div class="cover-face"><img src="cover.jpg" alt="Voorkant van de verjaardagskaart"></div>
+   <div class="cover-face cover-back"><img src="envelope.jpg" alt="Binnenkant van de omslag"></div>
+  </div>
+ </div>
+ <div class="hint" id="hint">Klik of tik op de voorkant om de kaart te openen</div>
+ <div class="controls">
+  <button class="ctrl" id="toggle">Open kaart</button>
+  <button class="ctrl" id="reset">Kaarsjes opnieuw aan</button>
+ </div>
+</main>
+<script>
+const cover=document.getElementById('cover'),hint=document.getElementById('hint'),toggle=document.getElementById('toggle');
+let opened=false;
+const stage=document.querySelector('.stage');
+function setOpen(v){opened=v;cover.classList.toggle('open',v);stage.classList.toggle('is-open',v);hint.textContent=v?'Klik op de voorkant om de kaart te sluiten':'Klik of tik op de voorkant om de kaart te openen';toggle.textContent=v?'Sluit kaart':'Open kaart';}
+cover.addEventListener('click',()=>setOpen(!opened));
+cover.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setOpen(!opened)}});
+toggle.addEventListener('click',()=>setOpen(!opened));
+const overlay=document.getElementById('letterOverlay');
+document.getElementById('openLetter').addEventListener('click',()=>overlay.classList.add('show'));
+overlay.addEventListener('click',()=>overlay.classList.remove('show'));
+const cakeArt=document.getElementById('cakeArt');
+document.getElementById('blowCandles').addEventListener('click',()=>{cakeArt.src=cakeArt.dataset.flamesOut;});
+const originalCakeSrc=cakeArt.src;
+document.getElementById('reset').addEventListener('click',()=>{cakeArt.src=originalCakeSrc;});
+</script>
+</body>
+</html>
